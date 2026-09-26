@@ -1,18 +1,29 @@
-#ifndef JUEGO_H
-#define JUEGO_H
+#ifndef JUGADOR_H
+#define JUGADOR_H
 
 #include <string>
-#include "Jugador.h"
+#include "Carta.h" 
 
-class Juego {
+class Jugador {
 private:
-    Jugador jugadores[4];
-    int cantidadJugadores;
-    int rondaActual;
-    int turnoActual;
+    std::string nombre;
+    Carta mano[7];
+    int cantidadCartas;
+    int puntaje;
 
-    void repartirCartas() {
-        // Lógica para repartir cartas
-    }
+public:
+    Jugador();
+    Jugador(std::string nombre);
 
-    
+    void recibirCarta(Carta nuevaCarta);
+    Carta jugarCarta(int indice);
+    bool tieneColor(int colorRequerido);
+    void sumarPunto();
+    std::string consultarNombre();
+    int consultarPuntaje();
+    int consultarCantidadCartas();
+    std::string mostrarJugador();
+    std::string verMano();
+};
+
+#endif 
