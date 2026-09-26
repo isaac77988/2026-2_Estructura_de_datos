@@ -118,3 +118,53 @@ void Juego::jugarRonda() {
          
     rondaActual++;
 }
+
+bool Juego::guardarPartida(string archivo) {
+    ofstream salida(archivo);
+    if (!salida.is_open()) return false;
+
+    salida << cantidadJugadores << "\n" << rondaActual << "\n" << turnoActual << "\n";
+
+    for (int i = 0; i < cantidadJugadores; i++) {
+        salida << jugadores[i].consultarNombre() << "\n";
+        salida << jugadores[i].consultarPuntaje() << "\n";
+        
+        int cantCartas = jugadores[i].consultarCantidadCartas();
+        salida << cantCartas << "\n";
+
+        for (int c = 0; c < cantCartas; c++) {
+            Carta temp = jugadores[i].jugarCarta(0);
+            salida << temp.elegirColor() << " " << temp.consultarNumero() << "\n";
+            jugadores[i].recibirCarta(temp);
+        }
+    }
+    salida.close();
+    return true;
+}
+
+bool Juego::cargarPartida(string archivo) {
+    ifstream entrada(archivo);
+    if (!entrada.is_open()) return false;
+
+    entrada >> cantidadJugadores >> rondaActual >> turnoActual;
+
+    for (int i = 0; i < cantidadJugadores; i++) {
+        string nombre;
+        int puntaje, cantCartas;
+        
+        entrada >> nombre >> puntaje >> cantCartas;
+        jugadores[i] = Jugador(nombre);
+
+        for (int p = 0; p < puntaje; p++) {
+            jugadores[i].sumarPunto();
+        }
+
+        for (int c = 0; c < cantCartas; c++) {
+            int color, numero;
+            entrada >> color >> numero;
+            jugadores[i].recibirCarta(Carta(color, numero));
+        }
+    }
+    entrada.close();
+    return true;
+}
