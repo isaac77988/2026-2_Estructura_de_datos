@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
+#include <limits>
 
 using namespace std;
 
@@ -23,7 +24,7 @@ void Juego::agregarJugador(string nombre) {
 
 void Juego::repartirCartas() {
     Carta mazo[28];
-    
+
     for (int i = 0; i < 14; i++) {
         mazo[i] = Carta(0, i + 1);
         mazo[i + 14] = Carta(1, i + 1);
@@ -68,10 +69,10 @@ int Juego::evaluarGanador(Carta cartasJugadas[], int colorRequerido, int regla) 
 
     for (int i = 0; i < cantidadJugadores; i++) {
         Carta c = cartasJugadas[i];
-        
+
         if (c.elegirColor() == colorRequerido) {
             int num = c.consultarNumero();
-            
+
             if (regla == 0 && num > valorGanador) {
                 valorGanador = num;
                 indiceGanador = i;
@@ -86,37 +87,94 @@ int Juego::evaluarGanador(Carta cartasJugadas[], int colorRequerido, int regla) 
 
 void Juego::jugarRonda() {
     cout << "\n==========================================" << endl;
-    cout << "RONDA " << rondaActual << " | LIDER: " << jugadores[turnoActual].consultarNombre() << endl;
+    cout << "RONDA " << rondaActual << " de 7 | LIDER: " << jugadores[turnoActual].consultarNombre() << endl;
     cout << "==========================================" << endl;
 
-    int colorRequerido, regla;
-    cout << "Lider, selecciona el color requerido [0 = Rojo, 1 = Azul]: ";
-    cin >> colorRequerido;
-    cout << "Lider, selecciona la regla [0 = Carta Mayor, 1 = Carta Menor]: ";
-    cin >> regla;
+    cout << "Mano actual del lider (" << jugadores[turnoActual].consultarNombre() << "):" << endl;
+    cout << jugadores[turnoActual].verMano();
+
+    int colorRequerido = -1, regla = -1;
+    while (colorRequerido != 0 && colorRequerido != 1) {
+        cout << "Lider, selecciona el color requerido [0 = Rojo, 1 = Azul]: ";
+        cin >> colorRequerido;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
+    while (regla != 0 && regla != 1) {
+        cout << "Lider, selecciona la regla [0 = Carta Mayor, 1 = Carta Menor]: ";
+        cin >> regla;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
 
     Carta cartasJugadas[4];
 
-    for (int i = 0; i < cantidadJugadores; i++) {
+    for (int turno = 0; turno < cantidadJugadores; turno++) {
+        int i = (turnoActual + turno) % cantidadJugadores;
+
         cout << "\n--- Turno de " << jugadores[i].consultarNombre() << " ---" << endl;
         cout << jugadores[i].verMano();
-        
-        int indice;
-        cout << "Selecciona el indice de la carta a lanzar: ";
-        cin >> indice;
 
-        cartasJugadas[i] = jugadores[i].jugarCarta(indice);
-        cout << jugadores[i].consultarNombre() << " jugo la carta: " << cartasJugadas[i].mostrarCarta() << endl;
+        bool obligarColor = jugadores[i].tieneColor(colorRequerido);
+        if (obligarColor) {
+            cout << "(Aviso: Tienes cartas de color " << (colorRequerido == 0 ? "Rojo" : "Azul")
+                 << ", debes lanzar una de ese color)" << endl;
+        }
+
+        while (true) {
+            int indice = -1;
+            cout << "Selecciona el indice de la carta a lanzar (0 a "
+                 << (jugadores[i].consultarCantidadCartas() - 1) << "): ";
+            cin >> indice;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            if (indice < 0 || indice >= jugadores[i].consultarCantidadCartas()) {
+                cout << "Indice invalido. Intenta de nuevo." << endl;
+                continue;
+            }
+
+            Carta elegida = jugadores[i].jugarCarta(indice);
+            if (obligarColor && elegida.elegirColor() != colorRequerido) {
+                cout << "Jugada invalida: Debes jugar una carta del color requerido ("
+                     << (colorRequerido == 0 ? "Rojo" : "Azul") << ")." << endl;
+                jugadores[i].recibirCarta(elegida);
+                cout << jugadores[i].verMano();
+                continue;
+            }
+
+            cartasJugadas[i] = elegida;
+            cout << jugadores[i].consultarNombre() << " jugo la carta: " << cartasJugadas[i].mostrarCarta() << endl;
+            break;
+        }
     }
 
     int ganador = evaluarGanador(cartasJugadas, colorRequerido, regla);
     jugadores[ganador].sumarPunto();
     turnoActual = ganador;
 
-    cout << "\n>>> Ganador de la ronda: " << jugadores[ganador].consultarNombre() 
+    cout << "\n>>> Ganador de la ronda: " << jugadores[ganador].consultarNombre()
          << " (Puntaje total: " << jugadores[ganador].consultarPuntaje() << ") <<<" << endl;
-         
+
     rondaActual++;
+
+    if (rondaActual > 7) {
+        cout << "\n==========================================" << endl;
+        cout << "           TABLA FINAL DE PUNTOS          " << endl;
+        cout << "==========================================" << endl;
+        int maxPuntos = -1;
+        for (int i = 0; i < cantidadJugadores; i++) {
+            cout << " - " << jugadores[i].mostrarJugador() << endl;
+            if (jugadores[i].consultarPuntaje() > maxPuntos) {
+                maxPuntos = jugadores[i].consultarPuntaje();
+            }
+        }
+        cout << "\n>>> GANADOR(ES) DE LA PARTIDA CON " << maxPuntos << " PUNTOS: ";
+        for (int i = 0; i < cantidadJugadores; i++) {
+            if (jugadores[i].consultarPuntaje() == maxPuntos) {
+                cout << jugadores[i].consultarNombre() << " ";
+            }
+        }
+        cout << "<<<" << endl;
+    }
 }
 
 bool Juego::guardarPartida(string archivo) {
@@ -128,7 +186,7 @@ bool Juego::guardarPartida(string archivo) {
     for (int i = 0; i < cantidadJugadores; i++) {
         salida << jugadores[i].consultarNombre() << "\n";
         salida << jugadores[i].consultarPuntaje() << "\n";
-        
+
         int cantCartas = jugadores[i].consultarCantidadCartas();
         salida << cantCartas << "\n";
 
@@ -151,7 +209,7 @@ bool Juego::cargarPartida(string archivo) {
     for (int i = 0; i < cantidadJugadores; i++) {
         string nombre;
         int puntaje, cantCartas;
-        
+
         entrada >> nombre >> puntaje >> cantCartas;
         jugadores[i] = Jugador(nombre);
 
