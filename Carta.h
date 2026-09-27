@@ -1,17 +1,21 @@
 #ifndef CARTA_H
 #define CARTA_H
+
 #include <string>
 
 class Carta {
 private:
     int color;
     int numero;
+
 public:
-    carta();
-    carta(int color, int numero);
+    Carta();
+    Carta(int color, int numero);
 
     int elegirColor();
     int elegirNumero();
-    std::string mostarCarta();
+    int consultarNumero();
+    std::string mostrarCarta();
 };
+
 #endif
